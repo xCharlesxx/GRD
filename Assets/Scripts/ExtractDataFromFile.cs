@@ -24,7 +24,8 @@ public class ExtractDataFromFile : MonoBehaviour {
     }
 
     string filePath = "Assets/Misc/GaiaSource-CSV.csv";
-	public List<StarStats> stars = new List<StarStats>(); 
+	public List<StarStats> stars = new List<StarStats>();
+    int counter = 0; 
 	// Use this for initialization
 	void Start () {
 		string fileData = System.IO.File.ReadAllText(filePath);
@@ -53,6 +54,25 @@ public class ExtractDataFromFile : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		
-	}
+
+        //if (Input.GetKeyUp(KeyCode.Space))
+        //{
+        //    for (int i = 0; i < 1000; i++)
+        //    {
+                float distance = (float)(1 / stars[counter].parallax);
+                Debug.DrawLine(new Vector3(0, 0, 0), Vector3.forward * distance);
+                //Zero rotation 
+                transform.rotation = Quaternion.identity;
+                //Turn to direction of star
+                transform.Rotate((float)stars[counter].declination, (float)stars[counter].ascension, 0);
+                //Spawn star
+                GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                sphere.transform.position = transform.position + transform.forward * (distance * 10);
+                sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+                Debug.DrawLine(new Vector3(0, 0, 0), sphere.transform.position, Color.red, 0.1f);
+                Debug.Log(counter);
+                counter++;
+        //    }
+        //}
+    }
 }
