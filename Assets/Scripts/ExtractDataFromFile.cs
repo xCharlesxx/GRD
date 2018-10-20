@@ -4,7 +4,8 @@ using UnityEngine;
 
 
 
-public class ExtractDataFromFile : MonoBehaviour {
+public class ExtractDataFromFile : MonoBehaviour
+{
 
     public struct StarStats
     {
@@ -24,55 +25,119 @@ public class ExtractDataFromFile : MonoBehaviour {
     }
 
     string filePath = "Assets/Misc/GaiaSource-CSV.csv";
-	public List<StarStats> stars = new List<StarStats>();
-    int counter = 0; 
-	// Use this for initialization
-	void Start () {
-		string fileData = System.IO.File.ReadAllText(filePath);
-        fileData = fileData.Substring(fileData.IndexOf('\n') + 1); 
-        string[] lines = fileData.Split("\n"[0]);
+    public List<StarStats> stars = new List<StarStats>();
+    ParticleSystem starSpawner; 
+    int counter = 0;
+
+    // Use this for initialization
+    void Start()
+    {
+        string fileData = System.IO.File.ReadAllText(filePath);
+        //Get headings 
+        string[] headings = (fileData.Substring(0, fileData.IndexOf('\n') - 1)).Split(',');
+        //Ignore first line of headings in main data set and then split by line
+        string[] lines = (fileData.Substring(fileData.IndexOf('\n') + 1)).Split("\n"[0]);
 
         for (int i = 0; i <= lines.GetUpperBound(0) - 1; i++)
-		{
+        {
             string[] values = lines[i].Split(',');
-            if (values[9] == "" || values[37] == "")
-                continue; 
-            StarStats temp = new StarStats();
-            temp.ID             = values[1];
-            temp.parallax       = double.Parse(values[9]);
-            temp.ascension      = double.Parse(values[5]);
-            temp.declination    = double.Parse(values[7]);
-            temp.colour         = double.Parse(values[37]);
-            temp.pmra           = double.Parse(values[12]);
-            temp.pmdec          = double.Parse(values[14]);
-            stars.Add(temp); 
-            //temp.radialVelocity = double.Parse(values[66]); 
-            //double[] value = System.Array.ConvertAll(line.Split(','), double.Parse); 
-		}
-        Debug.Log("complete"); 
-	}
-	
-	// Update is called once per frame
-	void Update () {
 
-        //if (Input.GetKeyUp(KeyCode.Space))
-        //{
-        //    for (int i = 0; i < 1000; i++)
-        //    {
-                float distance = (float)(1 / stars[counter].parallax);
-                Debug.DrawLine(new Vector3(0, 0, 0), Vector3.forward * distance);
-                //Zero rotation 
-                transform.rotation = Quaternion.identity;
-                //Turn to direction of star
-                transform.Rotate((float)stars[counter].declination, (float)stars[counter].ascension, 0);
-                //Spawn star
-                GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                sphere.transform.position = transform.position + transform.forward * (distance * 10);
-                sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-                Debug.DrawLine(new Vector3(0, 0, 0), sphere.transform.position, Color.red, 0.1f);
-                Debug.Log(counter);
-                counter++;
-        //    }
-        //}
+            //Ignore data with missing values
+            if (values[GetDataLocation(headings, "parallax")] == "" || 
+                values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "")
+                continue;
+
+            StarStats temp = new StarStats();
+            temp.ID = values[1];
+            temp.parallax = double.Parse(values[GetDataLocation(headings, "parallax")]); //9
+            temp.ascension = double.Parse(values[GetDataLocation(headings, "ra")]); //5
+            temp.declination = double.Parse(values[GetDataLocation(headings, "dec")]); //7
+            temp.colour = double.Parse(values[GetDataLocation(headings, "astrometric_pseudo_colour")]); //37
+            temp.pmra = double.Parse(values[GetDataLocation(headings, "pmra")]); //12
+            temp.pmdec = double.Parse(values[GetDataLocation(headings, "pmdec")]); //14
+            //temp.radialVelocity = double.Parse(values[66]); 
+
+            stars.Add(temp);
+        }
+        Debug.Log("complete");
+    }
+
+    //Finds and returns index of data heading
+    private int GetDataLocation(string[] headings, string dataHeading)
+    {
+        for (int i = 0; i < headings.Length; i++)
+            if (headings[i] == dataHeading)
+                return i;
+
+        Debug.Log("Error No Heading Found of that Name"); 
+        return 0;
+    }
+
+    private void SetParticles()
+    {
+        var pParticles = new ParticleSystem.Particle[stars.Count];
+        for (int i = 0; i < stars.Count; i++)
+        {
+            float distance = (float)(1 / stars[i].parallax);
+            //Zero rotation 
+            transform.rotation = Quaternion.identity;
+            //Turn to direction of star
+            transform.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
+            //Spawn star
+            pParticles[i].position = transform.position + transform.forward * (distance * 10);
+            pParticles[i].startSize3D = new Vector3(1f, 1f, 1f);
+            pParticles[i].startColor = new Color(1, 1, 1, 1);
+            //pParticles[i].startColor = new Color((float)stars[i].colour, 0, 0, 1); 
+        }
+        starSpawner = gameObject.GetComponent<ParticleSystem>();
+        starSpawner.SetParticles(pParticles, stars.Count);
+        //starSpawner.Emit(stars.Count);
+        //starSpawner.Pause(); 
+    }
+
+    private void SetGameObjects()
+    {
+        for (int i = 0; i < stars.Count; i++)
+        {
+            float distance = (float)(1 / stars[i].parallax);
+            Debug.DrawLine(new Vector3(0, 0, 0), Vector3.forward * distance);
+            //Zero rotation 
+            transform.rotation = Quaternion.identity;
+            //Turn to direction of star
+            transform.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
+            //Spawn star
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.transform.position = transform.position + transform.forward * (distance * 10);
+            sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            Debug.DrawLine(new Vector3(0, 0, 0), sphere.transform.position, Color.red, 0.1f);
+            //Debug.Log(counter);
+            //counter++;
+        }
+    }
+
+    // Update is called once per frame
+    void Update ()
+    {
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            SetGameObjects(); 
+        }
+        if (Input.GetKeyUp(KeyCode.Return))
+        {
+            SetParticles(); 
+        }
     }
 }
+
+
+////Check for missing data
+//bool isComplete = true;
+//            for (int x = 0; x<values.Length; x++)
+//                if (values[x] == "")
+//                {
+//                    isComplete = false;
+//                    break; 
+//                }
+//            //If data is missing disgard
+//            if (isComplete == false)
+//                continue; 
