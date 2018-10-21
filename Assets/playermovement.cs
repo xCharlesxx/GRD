@@ -15,11 +15,11 @@ public class playermovement : MonoBehaviour {
         rb.AddForce(0, 0, forwardForce * Time.deltaTime);
         if (Input.GetKey("d"))
         {
-            rb.AddForce(sidewwaysForce * Time.deltaTime, 0, 0);
+            rb.AddForce(sidewwaysForce * Time.deltaTime, 0, 0, ForceMode.VelocityChange);
         }
         if (Input.GetKey("a"))
         {
-            rb.AddForce(-sidewwaysForce * Time.deltaTime, 0, 0);
+            rb.AddForce(-sidewwaysForce * Time.deltaTime, 0, 0, ForceMode.VelocityChange);
         }
     }
 }
