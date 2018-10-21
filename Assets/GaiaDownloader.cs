@@ -82,21 +82,37 @@ public class GaiaDownloader : MonoBehaviour
 
     IEnumerator LoadLinks(List<string> linksList)
     {
-        for (var index = 0; index < linksList.Count; index++)
+        
+         if (!File.Exists("Temp/Writer/magic.csv"))
+            {
+                int offset = linksList.Count/filesCount;
+              for (var index = 0; index < linksList.Count; index+=offset)
         {
             var link = linksList[index];
             yield return StartCoroutine(Download(link, index));
         }
-
-        extract.SetParticles();
+        
+       yield return StartCoroutine(extract.ConvertFile());
         finish = DateTime.UtcNow;
         TimeSpan ts = new TimeSpan(finish.Ticks-start.Ticks);
         Debug.Log(ts.TotalSeconds);
+        
+
+            }
+      
+        start = DateTime.UtcNow;
+        yield return StartCoroutine(extract.LoadFromFile("Temp/Writer/magic.csv"));
+        
+        finish = DateTime.UtcNow;
+        TimeSpan ts2 = new TimeSpan(finish.Ticks-start.Ticks);
+        Debug.Log(ts2.TotalSeconds);
 
         if (deleteFiles)
         {
             StartCoroutine(DeleteFiles());
         }
+        
+        extract.SetParticles();
         yield return null;
     }
 

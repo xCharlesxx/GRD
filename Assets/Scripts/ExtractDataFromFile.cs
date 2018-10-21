@@ -1,6 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 
 
 
@@ -26,6 +31,7 @@ public class ExtractDataFromFile : MonoBehaviour
 
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
+    string[] headings;
     ParticleSystem starSpawner; 
     int counter = 0;
 
@@ -39,8 +45,8 @@ public class ExtractDataFromFile : MonoBehaviour
     public IEnumerator LoadFromFile(string filePath)
     {
         string fileData = System.IO.File.ReadAllText(filePath);
-        //Get headings 
-        string[] headings = (fileData.Substring(0, fileData.IndexOf('\n') - 1)).Split(',');
+        //Get headings
+        headings = (fileData.Substring(0, fileData.IndexOf('\n') - 1)).Split(',');
         //Ignore first line of headings in main data set and then split by line
         string[] lines = (fileData.Substring(fileData.IndexOf('\n') + 1)).Split("\n"[0]);
         var count = stars.Count;
@@ -50,7 +56,12 @@ public class ExtractDataFromFile : MonoBehaviour
 
             //Ignore data with missing values
             if (values[GetDataLocation(headings, "parallax")] == "" ||
-                values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "")
+                values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
+                values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
+                values[GetDataLocation(headings, "ra")] == "" ||
+                values[GetDataLocation(headings, "dec")] == "" ||
+                values[GetDataLocation(headings, "pmra")] == "" ||
+                values[GetDataLocation(headings, "pmdec")] == "")
                 continue;
 
             StarStats temp = new StarStats();
@@ -66,6 +77,33 @@ public class ExtractDataFromFile : MonoBehaviour
             stars.Add(temp);
         }
         Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count-count));
+        yield return null;
+    }
+
+    public IEnumerator ConvertFile()
+    {
+        var path = "Temp/Writer/magic.csv";
+        Debug.Log(path);
+        StreamWriter writer = new StreamWriter(path);
+        string line = "id,source,ra,dec,parallax,pmra,pmdec,astrometric_pseudo_colour";
+        writer.Write(line);
+        writer.WriteLine();
+        for (int i = 0; i < stars.Count; i++)
+        {
+            StarStats item = (StarStats)stars[i];
+            var line2 = i + ",";
+            line2 += item.ID + ",";
+            line2 += item.ascension + ",";
+            line2 += item.declination + ",";
+            line2 += item.parallax + ",";
+            line2 += item.pmra + ",";
+            line2 += item.pmdec + ",";
+            line2 += item.colour;
+            writer.Write(line2);
+            writer.WriteLine();
+
+        }
+        writer.Close();
         yield return null;
     }
 
