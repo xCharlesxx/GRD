@@ -8,33 +8,39 @@ using System.IO;
 using System.IO.Compression;
 
 
-
 public class ExtractDataFromFile : MonoBehaviour
 {
-
     public struct StarStats
     {
         public string ID;
         public double parallax;
         public double ascension;
         public double declination;
-        public double luminosity; 
+        public double luminosity;
         public double colour;
 
         //Movement variables 
         //Motion in Right Ascension
         public double pmra;
+
         //Motion in Declination 
         public double pmdec;
+
         //Radial velocity in km/s
         public double radialVelocity;
     }
+
     private int filesLoaded = 0;
+    public int filesConverted = 0;
+
+    public bool loadExistingMagic;
+
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
     string[] headings;
-    ParticleSystem starSpawner; 
+    ParticleSystem starSpawner;
     int counter = 0;
+
 
     // Use this for initialization
     void Start()
@@ -73,30 +79,41 @@ public class ExtractDataFromFile : MonoBehaviour
             temp.parallax = double.Parse(values[GetDataLocation(headings, "parallax")]); //9
             temp.ascension = double.Parse(values[GetDataLocation(headings, "ra")]); //5
             temp.declination = double.Parse(values[GetDataLocation(headings, "dec")]); //7
-            temp.luminosity = double.Parse(values[GetDataLocation(headings, "lum_val")]); 
+            temp.luminosity = double.Parse(values[GetDataLocation(headings, "lum_val")]);
             temp.colour = double.Parse(values[GetDataLocation(headings, "astrometric_pseudo_colour")]); //37
             temp.pmra = double.Parse(values[GetDataLocation(headings, "pmra")]); //12
             temp.pmdec = double.Parse(values[GetDataLocation(headings, "pmdec")]); //14
-            temp.radialVelocity = double.Parse(values[GetDataLocation(headings, "radial_velocity")]); 
+            temp.radialVelocity = double.Parse(values[GetDataLocation(headings, "radial_velocity")]);
 
             stars.Add(temp);
         }
-        filesLoaded++;
-        Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count-count));
+
+        if (!loadExistingMagic)
+        {
+            filesLoaded++;
+            if (filesLoaded % 34 == 0)
+            {
+                StartCoroutine(ConvertFile());
+            }
+        }
+
+        Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count - count));
         yield return null;
     }
 
+
     public IEnumerator ConvertFile()
     {
-        var path = "Temp/magic.csv";
+        var path = "Assets/Misc/MagicFiles/magic" + filesConverted + ".csv";
         Debug.Log(path);
         StreamWriter writer = new StreamWriter(path);
-        string line = "id,source,ra,dec,parallax,pmra,pmdec,astrometric_pseudo_colour,lum_val,radial_velocity,duplicated_source";
+        string line =
+            "id,source,ra,dec,parallax,pmra,pmdec,astrometric_pseudo_colour,lum_val,radial_velocity,duplicated_source";
         writer.Write(line);
         writer.WriteLine();
         for (int i = 0; i < stars.Count; i++)
         {
-            StarStats item = (StarStats)stars[i];
+            StarStats item = (StarStats) stars[i];
             var line2 = i + ",";
             line2 += item.ID + ",";
             line2 += item.ascension + ",";
@@ -110,9 +127,10 @@ public class ExtractDataFromFile : MonoBehaviour
             line2 += "FALSE";
             writer.Write(line2);
             writer.WriteLine();
-
         }
+
         writer.Close();
+        filesConverted++;
         yield return null;
     }
 
@@ -124,42 +142,46 @@ public class ExtractDataFromFile : MonoBehaviour
             if (headings[i] == dataHeading)
                 return i;
 
-        Debug.Log("Error No Heading Found of that Name"); 
+        Debug.Log("Error No Heading Found of that Name");
         return 0;
     }
+
 
     public void SetParticles()
     {
         var pParticles = new ParticleSystem.Particle[stars.Count];
         for (int i = 0; i < stars.Count; i++)
         {
-            float distance = (float)(1 / stars[i].parallax);
+            float distance = (float) (1 / stars[i].parallax);
             //Zero rotation 
             transform.rotation = Quaternion.identity;
             //Turn to direction of star
-            transform.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
+            transform.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
             //Spawn star
             pParticles[i].position = transform.position + transform.forward * (distance * 10);
-            pParticles[i].startSize3D = new Vector3((float)stars[i].luminosity/1000, (float)stars[i].luminosity / 1000, (float)stars[i].luminosity / 1000);
+            pParticles[i].startSize3D = new Vector3((float) stars[i].luminosity / 1000,
+                (float) stars[i].luminosity / 1000, (float) stars[i].luminosity / 1000);
             pParticles[i].startColor = new Color(1, 1, 1, 1);
             //pParticles[i].startColor = new Color((float)stars[i].colour, 0, 0, 1); 
         }
+
         starSpawner = gameObject.GetComponent<ParticleSystem>();
         starSpawner.SetParticles(pParticles, stars.Count);
         //starSpawner.Emit(stars.Count);
         //starSpawner.Pause(); 
     }
 
+
     private void SetGameObjects()
     {
         for (int i = 0; i < stars.Count; i++)
         {
-            float distance = (float)(1 / stars[i].parallax);
+            float distance = (float) (1 / stars[i].parallax);
             Debug.DrawLine(new Vector3(0, 0, 0), Vector3.forward * distance);
             //Zero rotation 
             transform.rotation = Quaternion.identity;
             //Turn to direction of star
-            transform.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
+            transform.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
             //Spawn star
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = transform.position + transform.forward * (distance * 10);
@@ -170,16 +192,18 @@ public class ExtractDataFromFile : MonoBehaviour
         }
     }
 
+
     // Update is called once per frame
-    void Update ()
+    void Update()
     {
         if (Input.GetKeyUp(KeyCode.Space))
         {
-            SetGameObjects(); 
+            SetGameObjects();
         }
+
         if (Input.GetKeyUp(KeyCode.Return))
         {
-            SetParticles(); 
+            SetParticles();
         }
     }
 }

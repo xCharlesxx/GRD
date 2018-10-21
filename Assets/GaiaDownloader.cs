@@ -6,24 +6,28 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GaiaDownloader : MonoBehaviour
 {
     private string filePath = "Assets/Misc/gaiaLinks.txt";
-    [SerializeField] private int filesCount;
+    [Range(1, 1801)] [SerializeField] private int filesCount;
     [SerializeField] private bool deleteFiles;
     [SerializeField] private ExtractDataFromFile extract;
 
+    [SerializeField] private bool loadExistingMagic;
     private List<string> linkList;
     private List<string> filesToDelete;
 
     private DateTime start;
 
     private DateTime finish;
+
+
     // Use this for initialization
     void Start()
     {
-
+        filesCount *= 34;
         start = DateTime.UtcNow;
         filesToDelete = new List<string>();
         StreamReader reader = new StreamReader(filePath);
@@ -31,7 +35,34 @@ public class GaiaDownloader : MonoBehaviour
         string[] links = x.Split('\n');
         linkList = new List<string>(links);
         linkList.RemoveRange(filesCount, links.Length - filesCount);
-        StartCoroutine(LoadLinks(linkList));
+        if (!loadExistingMagic)
+            StartCoroutine(LoadLinks(linkList));
+        else
+        {
+            StartCoroutine(LoadExistingMagic());
+        }
+    }
+
+
+    private IEnumerator LoadExistingMagic()
+    {
+        var startingindex = 0;
+        extract.loadExistingMagic = true;
+        for (int i = 0; i < 1801; i++)
+        {
+            if (File.Exists("Assets/Misc/MagicFiles/magic" + i + ".csv"))
+            {
+                yield return extract.LoadFromFile("Assets/Misc/MagicFiles/magic" + i + ".csv");
+            }
+            else
+            {
+                Debug.Log(i + "not found");
+                break;
+            }
+        }
+
+        extract.SetParticles();
+        yield return null;
     }
 
 
@@ -82,39 +113,42 @@ public class GaiaDownloader : MonoBehaviour
 
     IEnumerator LoadLinks(List<string> linksList)
     {
-        
-         if (!File.Exists("Temp/magic.csv"))
+        var startingindex = 0;
+        for (int i = 0; i < 1801; i++)
+        {
+            if (!File.Exists("Assets/Misc/MagicFiles/magic" + i + ".csv"))
             {
-                int offset = linksList.Count/filesCount;
-              for (var index = 0; index < linksList.Count; index+=offset)
+                startingindex = i * 34;
+                extract.filesConverted = i;
+                Debug.Log(i + "not found");
+                break;
+            }
+        }
+
+        for (var index = startingindex; index < linksList.Count; index++)
         {
             var link = linksList[index];
             yield return StartCoroutine(Download(link, index));
         }
-        
-       yield return StartCoroutine(extract.ConvertFile());
+
         finish = DateTime.UtcNow;
-        TimeSpan ts = new TimeSpan(finish.Ticks-start.Ticks);
+        TimeSpan ts = new TimeSpan(finish.Ticks - start.Ticks);
         Debug.Log(ts.TotalSeconds);
-        
+        //else
+        //{
+        //    start = DateTime.UtcNow;
+        //    yield return StartCoroutine(extract.LoadFromFile("Temp/magic.csv"));
 
-            }
-        else
-        {
-            start = DateTime.UtcNow;
-            yield return StartCoroutine(extract.LoadFromFile("Temp/magic.csv"));
+        //    finish = DateTime.UtcNow;
+        //    TimeSpan ts2 = new TimeSpan(finish.Ticks - start.Ticks);
+        //    Debug.Log(ts2.TotalSeconds);
+        //}
 
-            finish = DateTime.UtcNow;
-            TimeSpan ts2 = new TimeSpan(finish.Ticks - start.Ticks);
-            Debug.Log(ts2.TotalSeconds);
-
-
-        }
         if (deleteFiles)
         {
             StartCoroutine(DeleteFiles());
         }
-        
+
         extract.SetParticles();
         yield return null;
     }
@@ -137,7 +171,9 @@ public class GaiaDownloader : MonoBehaviour
             byte[] decompressed = Decompress(file);
             ByteArrayToFile("Temp/gaiaTest" + number + ".csv", decompressed);
         }
+
         yield return extract.LoadFromFile("Temp/gaiaTest" + number + ".csv");
+
         filesToDelete.Add("Temp/gaiaTest" + number + ".csv");
         filesToDelete.Add("Temp/gaiaTest" + number + ".gz");
 
@@ -168,6 +204,8 @@ public class GaiaDownloader : MonoBehaviour
 
         yield return null;
     }
+
+
     private IEnumerator DeleteFile(string _p0, float delay)
     {
         yield return new WaitForSeconds(delay);
