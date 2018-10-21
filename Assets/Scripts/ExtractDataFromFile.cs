@@ -18,6 +18,7 @@ public class ExtractDataFromFile : MonoBehaviour
         public double parallax;
         public double ascension;
         public double declination;
+        public double luminosity; 
         public double colour;
 
         //Movement variables 
@@ -28,7 +29,7 @@ public class ExtractDataFromFile : MonoBehaviour
         //Radial velocity in km/s
         public double radialVelocity;
     }
-
+    private int filesLoaded = 0;
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
     string[] headings;
@@ -58,10 +59,13 @@ public class ExtractDataFromFile : MonoBehaviour
             if (values[GetDataLocation(headings, "parallax")] == "" ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
+                values[GetDataLocation(headings, "lum_val")] == "" ||
                 values[GetDataLocation(headings, "ra")] == "" ||
                 values[GetDataLocation(headings, "dec")] == "" ||
                 values[GetDataLocation(headings, "pmra")] == "" ||
-                values[GetDataLocation(headings, "pmdec")] == "")
+                values[GetDataLocation(headings, "pmdec")] == "" ||
+                values[GetDataLocation(headings, "radial_velocity")] == "" ||
+                values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
                 continue;
 
             StarStats temp = new StarStats();
@@ -69,23 +73,25 @@ public class ExtractDataFromFile : MonoBehaviour
             temp.parallax = double.Parse(values[GetDataLocation(headings, "parallax")]); //9
             temp.ascension = double.Parse(values[GetDataLocation(headings, "ra")]); //5
             temp.declination = double.Parse(values[GetDataLocation(headings, "dec")]); //7
+            temp.luminosity = double.Parse(values[GetDataLocation(headings, "lum_val")]); 
             temp.colour = double.Parse(values[GetDataLocation(headings, "astrometric_pseudo_colour")]); //37
             temp.pmra = double.Parse(values[GetDataLocation(headings, "pmra")]); //12
             temp.pmdec = double.Parse(values[GetDataLocation(headings, "pmdec")]); //14
-            //temp.radialVelocity = double.Parse(values[66]); 
+            temp.radialVelocity = double.Parse(values[GetDataLocation(headings, "radial_velocity")]); 
 
             stars.Add(temp);
         }
+        filesLoaded++;
         Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count-count));
         yield return null;
     }
 
     public IEnumerator ConvertFile()
     {
-        var path = "Temp/Writer/magic.csv";
+        var path = "Temp/magic.csv";
         Debug.Log(path);
         StreamWriter writer = new StreamWriter(path);
-        string line = "id,source,ra,dec,parallax,pmra,pmdec,astrometric_pseudo_colour";
+        string line = "id,source,ra,dec,parallax,pmra,pmdec,astrometric_pseudo_colour,lum_val,radial_velocity,duplicated_source";
         writer.Write(line);
         writer.WriteLine();
         for (int i = 0; i < stars.Count; i++)
@@ -98,7 +104,10 @@ public class ExtractDataFromFile : MonoBehaviour
             line2 += item.parallax + ",";
             line2 += item.pmra + ",";
             line2 += item.pmdec + ",";
-            line2 += item.colour;
+            line2 += item.colour + ",";
+            line2 += item.luminosity + ",";
+            line2 += item.radialVelocity + ",";
+            line2 += "FALSE";
             writer.Write(line2);
             writer.WriteLine();
 
@@ -131,7 +140,7 @@ public class ExtractDataFromFile : MonoBehaviour
             transform.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
             //Spawn star
             pParticles[i].position = transform.position + transform.forward * (distance * 10);
-            pParticles[i].startSize3D = new Vector3(1f, 1f, 1f);
+            pParticles[i].startSize3D = new Vector3((float)stars[i].luminosity/1000, (float)stars[i].luminosity / 1000, (float)stars[i].luminosity / 1000);
             pParticles[i].startColor = new Color(1, 1, 1, 1);
             //pParticles[i].startColor = new Color((float)stars[i].colour, 0, 0, 1); 
         }

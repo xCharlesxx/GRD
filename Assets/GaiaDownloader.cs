@@ -83,7 +83,7 @@ public class GaiaDownloader : MonoBehaviour
     IEnumerator LoadLinks(List<string> linksList)
     {
         
-         if (!File.Exists("Temp/Writer/magic.csv"))
+         if (!File.Exists("Temp/magic.csv"))
             {
                 int offset = linksList.Count/filesCount;
               for (var index = 0; index < linksList.Count; index+=offset)
@@ -99,14 +99,17 @@ public class GaiaDownloader : MonoBehaviour
         
 
             }
-      
-        start = DateTime.UtcNow;
-        yield return StartCoroutine(extract.LoadFromFile("Temp/Writer/magic.csv"));
-        
-        finish = DateTime.UtcNow;
-        TimeSpan ts2 = new TimeSpan(finish.Ticks-start.Ticks);
-        Debug.Log(ts2.TotalSeconds);
+        else
+        {
+            start = DateTime.UtcNow;
+            yield return StartCoroutine(extract.LoadFromFile("Temp/magic.csv"));
 
+            finish = DateTime.UtcNow;
+            TimeSpan ts2 = new TimeSpan(finish.Ticks - start.Ticks);
+            Debug.Log(ts2.TotalSeconds);
+
+
+        }
         if (deleteFiles)
         {
             StartCoroutine(DeleteFiles());
@@ -119,7 +122,7 @@ public class GaiaDownloader : MonoBehaviour
 
     IEnumerator Download(string url, int number)
     {
-        if (!File.Exists("Temp/gaiaTest" + number + ".gz"))
+        if (!File.Exists("Temp/gaiaTest" + number + ".csv"))
         {
             Debug.Log("Downloading: " + "gaiaTest" + number + ".gz");
             WebClient client = new WebClient();
