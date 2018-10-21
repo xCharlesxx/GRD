@@ -131,6 +131,7 @@ public class ExtractDataFromFile : MonoBehaviour
 
         writer.Close();
         filesConverted++;
+        stars = new List<StarStats>();
         yield return null;
     }
 
