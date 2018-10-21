@@ -24,7 +24,7 @@ public class ExtractDataFromFile : MonoBehaviour
         public double radialVelocity;
     }
 
-    string filePath = "Assets/Misc/GaiaSource-CSV.csv";
+    //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
     ParticleSystem starSpawner; 
     int counter = 0;
@@ -32,18 +32,24 @@ public class ExtractDataFromFile : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        //LoadFromFile("Assets/Misc/GaiaSource-CSV.csv");
+    }
+
+
+    public IEnumerator LoadFromFile(string filePath)
+    {
         string fileData = System.IO.File.ReadAllText(filePath);
         //Get headings 
         string[] headings = (fileData.Substring(0, fileData.IndexOf('\n') - 1)).Split(',');
         //Ignore first line of headings in main data set and then split by line
         string[] lines = (fileData.Substring(fileData.IndexOf('\n') + 1)).Split("\n"[0]);
-
+        var count = stars.Count;
         for (int i = 0; i <= lines.GetUpperBound(0) - 1; i++)
         {
             string[] values = lines[i].Split(',');
 
             //Ignore data with missing values
-            if (values[GetDataLocation(headings, "parallax")] == "" || 
+            if (values[GetDataLocation(headings, "parallax")] == "" ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "")
                 continue;
 
@@ -59,8 +65,10 @@ public class ExtractDataFromFile : MonoBehaviour
 
             stars.Add(temp);
         }
-        Debug.Log("complete");
+        Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count-count));
+        yield return null;
     }
+
 
     //Finds and returns index of data heading
     private int GetDataLocation(string[] headings, string dataHeading)
@@ -73,7 +81,7 @@ public class ExtractDataFromFile : MonoBehaviour
         return 0;
     }
 
-    private void SetParticles()
+    public void SetParticles()
     {
         var pParticles = new ParticleSystem.Particle[stars.Count];
         for (int i = 0; i < stars.Count; i++)

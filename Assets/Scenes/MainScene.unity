@@ -269,6 +269,7 @@ GameObject:
   - component: {fileID: 1620600351}
   - component: {fileID: 1620600356}
   - component: {fileID: 1620600352}
+  - component: {fileID: 1620600357}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -326,8 +327,8 @@ ParticleSystemRenderer:
   m_SortingOrder: 0
   m_RenderMode: 0
   m_SortMode: 0
-  m_MinParticleSize: 0.01
-  m_MaxParticleSize: 0.01
+  m_MinParticleSize: 0.001
+  m_MaxParticleSize: 0.001
   m_CameraVelocityScale: 0
   m_VelocityScale: 0
   m_LengthScale: 2
@@ -4932,3 +4933,17 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
+--- !u!114 &1620600357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1620600350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf9f70c44cb2c7a44a23e9f733868de7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  filesCount: 32
+  deleteFiles: 0
+  extract: {fileID: 1620600351}
