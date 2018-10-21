@@ -46,9 +46,10 @@ public class GaiaDownloader : MonoBehaviour
 
     private IEnumerator LoadExistingMagic()
     {
-        var startingindex = 0;
+        int i = 0;
+           var startingindex = 0;
         extract.loadExistingMagic = true;
-        for (int i = 0; i < 1801; i++)
+        for ( i = 0; i < 1801; i++)
         {
             if (File.Exists("Assets/Misc/MagicFiles/magic" + i + ".csv"))
             {
@@ -56,12 +57,15 @@ public class GaiaDownloader : MonoBehaviour
             }
             else
             {
-                Debug.Log(i + "not found");
                 break;
             }
         }
 
         extract.SetParticles();
+
+        finish = DateTime.UtcNow;
+        TimeSpan ts = new TimeSpan(finish.Ticks - start.Ticks);
+        Debug.Log(i-1 + " magic files loaded in " + ts.TotalSeconds + " seconds\n" + (i-1)*34 + " datasets included");
         yield return null;
     }
 
