@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,7 +32,7 @@ public class ExtractDataFromFile : MonoBehaviour
     public int filesConverted = 0;
 
     public bool loadExistingMagic;
-
+    public bool colour = false; 
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
     string[] headings;
@@ -162,8 +160,10 @@ public class ExtractDataFromFile : MonoBehaviour
             pParticles[i].position = transform.position + transform.forward * (distance * 10);
             pParticles[i].startSize3D = new Vector3((float) stars[i].luminosity / 1000,
                 (float) stars[i].luminosity / 1000, (float) stars[i].luminosity / 1000);
-            pParticles[i].startColor = new Color(1, 1, 1, 1);
-            //pParticles[i].startColor = new Color((float)stars[i].colour, 0, 0, 1); 
+            if (!colour)
+             pParticles[i].startColor = new Color(1, 1, 1, 1);
+            else
+             pParticles[i].startColor = new Color(1, (float)stars[i].colour -1, 0, 1); 
         }
 
         starSpawner = gameObject.GetComponent<ParticleSystem>();
