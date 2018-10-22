@@ -4946,7 +4946,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf9f70c44cb2c7a44a23e9f733868de7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  filesCount: 1801
+  filesCount: 300
   deleteFiles: 0
   extract: {fileID: 1620600351}
   loadExistingMagic: 1
