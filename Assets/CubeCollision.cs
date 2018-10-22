@@ -6,7 +6,7 @@ public class CubeCollision : MonoBehaviour {
 
     void OnCollisionEnter (Collision collisionInfo)
     {
-        if (collisionInfo.GetComponent<Collider>().tag == "Obstacle")
+        if (collisionInfo.collider.tag == "Obstacle")
         {
             movement.enabled = false;
         }
