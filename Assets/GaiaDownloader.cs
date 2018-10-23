@@ -15,6 +15,7 @@ public class GaiaDownloader : MonoBehaviour
     [SerializeField] private bool deleteFiles;
     [SerializeField] private ExtractDataFromFile extract;
 
+    [Range(1, 300)] [SerializeField] private int magicCount;
     [SerializeField] private bool loadExistingMagic;
     private List<string> linkList;
     private List<string> filesToDelete;
@@ -49,7 +50,7 @@ public class GaiaDownloader : MonoBehaviour
         int i = 0;
            var startingindex = 0;
         extract.loadExistingMagic = true;
-        for ( i = 0; i < 1801; i++)
+        for ( i = 0; i < magicCount; i++)
         {
             if (File.Exists("Assets/Misc/MagicFiles/magic" + i + ".csv"))
             {

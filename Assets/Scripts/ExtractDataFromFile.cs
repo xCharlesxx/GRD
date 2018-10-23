@@ -32,17 +32,20 @@ public class ExtractDataFromFile : MonoBehaviour
     public int filesConverted = 0;
 
     public bool loadExistingMagic;
-    public bool colour = false; 
+    public bool colour = false;
+    public float distanceMultiplier = 0;
+    float lastdist; 
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
     string[] headings;
     ParticleSystem starSpawner;
     int counter = 0;
-
+    
 
     // Use this for initialization
     void Start()
     {
+        lastdist = distanceMultiplier;
         //LoadFromFile("Assets/Misc/GaiaSource-CSV.csv");
     }
 
@@ -60,7 +63,7 @@ public class ExtractDataFromFile : MonoBehaviour
             string[] values = lines[i].Split(',');
 
             //Ignore data with missing values
-            if (values[GetDataLocation(headings, "parallax")] == "" ||
+            if (values[GetDataLocation(headings, "parallax")] == "" || Convert.ToDouble( values[GetDataLocation(headings, "parallax")]) <=7.50f ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
                 values[GetDataLocation(headings, "lum_val")] == "" ||
@@ -94,7 +97,6 @@ public class ExtractDataFromFile : MonoBehaviour
                 StartCoroutine(ConvertFile());
             }
         }
-
         Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count - count));
         yield return null;
     }
@@ -157,7 +159,7 @@ public class ExtractDataFromFile : MonoBehaviour
             //Turn to direction of star
             transform.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
             //Spawn star
-            pParticles[i].position = transform.position + transform.forward * (distance * 10);
+            pParticles[i].position = transform.position + transform.forward * (distance * lastdist);
             pParticles[i].startSize3D = new Vector3((float) stars[i].luminosity / 1000,
                 (float) stars[i].luminosity / 1000, (float) stars[i].luminosity / 1000);
             if (!colour)
@@ -171,6 +173,16 @@ public class ExtractDataFromFile : MonoBehaviour
         //starSpawner.Emit(stars.Count);
         //starSpawner.Pause(); 
     }
+
+
+    //Color pseudoToRGB(float wavenumber)
+    //{
+    //    var wavelength = wavenumber / 1000.0f;
+    //    var spectrum = 1.0f / wavelength;
+
+
+    //}
+
 
 
     private void SetGameObjects()
@@ -197,14 +209,36 @@ public class ExtractDataFromFile : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyUp(KeyCode.Space))
-        {
-            SetGameObjects();
-        }
-
+        //if (Input.GetKeyUp(KeyCode.Space))
+        //if (lastdist != distanceMultiplier)
+        //{
+        //    SetParticles();
+        //    lastdist = distanceMultiplier; 
+        //}
         if (Input.GetKeyUp(KeyCode.Return))
         {
+            distanceMultiplier = 100;
+            StartCoroutine(Explode());
+        }
+        if (Input.GetKeyUp(KeyCode.R))
+        {
+            lastdist = 0;
             SetParticles();
+        }
+    }
+
+    public IEnumerator Explode()
+    {
+        var destDistM = distanceMultiplier;
+        var timer = 0.0f;
+        while (lastdist<distanceMultiplier)
+        {
+            timer += Time.deltaTime / 10.0f;
+            lastdist = Mathf.Lerp(0.0f, distanceMultiplier, timer);
+
+            //transform.localScale = new Vector3(lastdist, lastdist, lastdist);
+            SetParticles();
+            yield return new WaitForEndOfFrame();
         }
     }
 }
