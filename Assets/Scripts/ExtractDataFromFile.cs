@@ -165,7 +165,7 @@ public class ExtractDataFromFile : MonoBehaviour
             if (!colour)
              pParticles[i].startColor = new Color(1, 1, 1, 1);
             else
-             pParticles[i].startColor = new Color(1, (float)stars[i].colour -1, 0, 1); 
+             pParticles[i].startColor = PseudoToRGB(stars[i].colour); 
         }
 
         starSpawner = gameObject.GetComponent<ParticleSystem>();
@@ -175,13 +175,83 @@ public class ExtractDataFromFile : MonoBehaviour
     }
 
 
-    //Color pseudoToRGB(float wavenumber)
-    //{
-    //    var wavelength = wavenumber / 1000.0f;
-    //    var spectrum = 1.0f / wavelength;
+    Color PseudoToRGB(double wavenumber)
+    {
+        //Keeping precision with double over float
+        var nanometers = wavenumber / 1000.0f;
+        var wavelengthdouble = 1.0f / nanometers;
+        float wavelength = (float)wavelengthdouble; 
+        float Gamma = 0.80f;
+        int IntensityMax = 255;
+        float factor, red, green, blue;
 
+        if ((wavelength >= 380) && (wavelength<440))
+        {
+            red = -(wavelength - 440) / (440 - 380);
+            green = 0.0f;
+            blue = 1.0f;
+        }
+        else if((wavelength >= 440) && (wavelength<490))
+        {
+            red = 0.0f;
+            green = (wavelength - 440) / (490 - 440);
+            blue = 1.0f;
+        }
+        else if((wavelength >= 490) && (wavelength<510))
+        {
+            red = 0.0f;
+            green = 1.0f;
+            blue = -(wavelength - 510) / (510 - 490);
+        }
+        else if((wavelength >= 510) && (wavelength<580))
+        {
+            red = (wavelength - 510) / (580 - 510);
+            green = 1.0f;
+            blue = 0.0f;
+        }
+        else if((wavelength >= 580) && (wavelength<645))
+        {
+            red = 1.0f;
+            green = -(wavelength - 645) / (645 - 580);
+            blue = 0.0f;
+        }
+        else if((wavelength >= 645) && (wavelength<781))
+        {
+            red = 1.0f;
+            green = 0.0f;
+            blue = 0.0f;
+        }
+        else
+        {
+            red = 0.0f;
+            green = 0.0f;
+            blue = 0.0f;
+        }
+        // Let the intensity fall off near the vision limits
+        if ((wavelength >= 380) && (wavelength<420))
+            factor = 0.3f + 0.7f*(wavelength - 380) / (420 - 380);
 
-    //}
+        else if((wavelength >= 420) && (wavelength<701))
+            factor = 1.0f;
+
+        else if((wavelength >= 701) && (wavelength<781))
+            factor = 0.3f + 0.7f*(780 - wavelength) / (780 - 700);
+
+        else 
+            factor = 0.0f;
+
+        if (red != 0)
+            red = (float)Math.Round(IntensityMax * Math.Pow(red * factor, Gamma));
+            
+        if (green != 0)
+            green = (float)Math.Round(IntensityMax * Math.Pow(green * factor, Gamma));
+            
+        if (blue != 0)
+            blue = (float)Math.Round(IntensityMax * Math.Pow(blue * factor, Gamma));
+            
+        return new Color(red,green,blue);
+    }
+
 
 
 
