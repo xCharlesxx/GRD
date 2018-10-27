@@ -28,19 +28,22 @@ public class ExtractDataFromFile : MonoBehaviour
         public double radialVelocity;
     }
 
+    public int starsLimit;
     private int filesLoaded = 0;
     public int filesConverted = 0;
 
     public bool loadExistingMagic;
     public bool colour = false;
     public float distanceMultiplier = 0;
-    float lastdist; 
+
+    float lastdist;
+
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public List<StarStats> stars = new List<StarStats>();
     string[] headings;
     ParticleSystem starSpawner;
     int counter = 0;
-    
+
 
     // Use this for initialization
     void Start()
@@ -52,6 +55,7 @@ public class ExtractDataFromFile : MonoBehaviour
 
     public IEnumerator LoadFromFile(string filePath)
     {
+        //Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= 15f ||
         string fileData = System.IO.File.ReadAllText(filePath);
         //Get headings
         headings = (fileData.Substring(0, fileData.IndexOf('\n') - 1)).Split(',');
@@ -63,7 +67,7 @@ public class ExtractDataFromFile : MonoBehaviour
             string[] values = lines[i].Split(',');
 
             //Ignore data with missing values
-            if (values[GetDataLocation(headings, "parallax")] == "" || Convert.ToDouble( values[GetDataLocation(headings, "parallax")]) <=7.50f ||
+            if (values[GetDataLocation(headings, "parallax")] == "" ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
                 values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
                 values[GetDataLocation(headings, "lum_val")] == "" ||
@@ -74,6 +78,12 @@ public class ExtractDataFromFile : MonoBehaviour
                 values[GetDataLocation(headings, "radial_velocity")] == "" ||
                 values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
                 continue;
+
+            if (loadExistingMagic && Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= 15f)
+            {
+                continue;
+;
+            }
 
             StarStats temp = new StarStats();
             temp.ID = values[1];
@@ -97,6 +107,7 @@ public class ExtractDataFromFile : MonoBehaviour
                 StartCoroutine(ConvertFile());
             }
         }
+
         Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count - count));
         yield return null;
     }
@@ -163,9 +174,9 @@ public class ExtractDataFromFile : MonoBehaviour
             pParticles[i].startSize3D = new Vector3((float) stars[i].luminosity / 1000,
                 (float) stars[i].luminosity / 1000, (float) stars[i].luminosity / 1000);
             if (!colour)
-             pParticles[i].startColor = new Color(1, 1, 1, 1);
+                pParticles[i].startColor = new Color(1, 1, 1, 1);
             else
-             pParticles[i].startColor = PseudoToRGB(stars[i].colour); 
+                pParticles[i].startColor = PseudoToRGB(stars[i].colour);
         }
 
         starSpawner = gameObject.GetComponent<ParticleSystem>();
@@ -180,42 +191,42 @@ public class ExtractDataFromFile : MonoBehaviour
         //Keeping precision with double over float
         var nanometers = wavenumber / 1000.0f;
         var wavelengthdouble = 1.0f / nanometers;
-        float wavelength = (float)wavelengthdouble; 
+        float wavelength = (float) wavelengthdouble;
         float Gamma = 0.80f;
         int IntensityMax = 255;
         float factor, red, green, blue;
 
-        if ((wavelength >= 380) && (wavelength<440))
+        if ((wavelength >= 380) && (wavelength < 440))
         {
             red = -(wavelength - 440) / (440 - 380);
             green = 0.0f;
             blue = 1.0f;
         }
-        else if((wavelength >= 440) && (wavelength<490))
+        else if ((wavelength >= 440) && (wavelength < 490))
         {
             red = 0.0f;
             green = (wavelength - 440) / (490 - 440);
             blue = 1.0f;
         }
-        else if((wavelength >= 490) && (wavelength<510))
+        else if ((wavelength >= 490) && (wavelength < 510))
         {
             red = 0.0f;
             green = 1.0f;
             blue = -(wavelength - 510) / (510 - 490);
         }
-        else if((wavelength >= 510) && (wavelength<580))
+        else if ((wavelength >= 510) && (wavelength < 580))
         {
             red = (wavelength - 510) / (580 - 510);
             green = 1.0f;
             blue = 0.0f;
         }
-        else if((wavelength >= 580) && (wavelength<645))
+        else if ((wavelength >= 580) && (wavelength < 645))
         {
             red = 1.0f;
             green = -(wavelength - 645) / (645 - 580);
             blue = 0.0f;
         }
-        else if((wavelength >= 645) && (wavelength<781))
+        else if ((wavelength >= 645) && (wavelength < 781))
         {
             red = 1.0f;
             green = 0.0f;
@@ -227,32 +238,31 @@ public class ExtractDataFromFile : MonoBehaviour
             green = 0.0f;
             blue = 0.0f;
         }
-        // Let the intensity fall off near the vision limits
-        if ((wavelength >= 380) && (wavelength<420))
-            factor = 0.3f + 0.7f*(wavelength - 380) / (420 - 380);
 
-        else if((wavelength >= 420) && (wavelength<701))
+        // Let the intensity fall off near the vision limits
+        if ((wavelength >= 380) && (wavelength < 420))
+            factor = 0.3f + 0.7f * (wavelength - 380) / (420 - 380);
+
+        else if ((wavelength >= 420) && (wavelength < 701))
             factor = 1.0f;
 
-        else if((wavelength >= 701) && (wavelength<781))
-            factor = 0.3f + 0.7f*(780 - wavelength) / (780 - 700);
+        else if ((wavelength >= 701) && (wavelength < 781))
+            factor = 0.3f + 0.7f * (780 - wavelength) / (780 - 700);
 
-        else 
+        else
             factor = 0.0f;
 
         if (red != 0)
-            red = (float)Math.Round(IntensityMax * Math.Pow(red * factor, Gamma));
-            
+            red = (float) Math.Round(IntensityMax * Math.Pow(red * factor, Gamma));
+
         if (green != 0)
-            green = (float)Math.Round(IntensityMax * Math.Pow(green * factor, Gamma));
-            
+            green = (float) Math.Round(IntensityMax * Math.Pow(green * factor, Gamma));
+
         if (blue != 0)
-            blue = (float)Math.Round(IntensityMax * Math.Pow(blue * factor, Gamma));
-            
-        return new Color(red,green,blue);
+            blue = (float) Math.Round(IntensityMax * Math.Pow(blue * factor, Gamma));
+
+        return new Color(red, green, blue);
     }
-
-
 
 
     private void SetGameObjects()
@@ -290,6 +300,7 @@ public class ExtractDataFromFile : MonoBehaviour
             distanceMultiplier = 100;
             StartCoroutine(Explode());
         }
+
         if (Input.GetKeyUp(KeyCode.R))
         {
             lastdist = 0;
@@ -297,15 +308,16 @@ public class ExtractDataFromFile : MonoBehaviour
         }
     }
 
+
     public IEnumerator Explode()
     {
         var destDistM = distanceMultiplier;
         var timer = 0.0f;
-        while (lastdist<distanceMultiplier)
+        while (lastdist < distanceMultiplier - 1)
         {
-            timer += Time.deltaTime / 10.0f;
-            lastdist = Mathf.Lerp(0.0f, distanceMultiplier, timer);
-
+            //timer += Time.deltaTime / 10.0f;
+            lastdist += (distanceMultiplier - lastdist) * 0.1f;
+            Debug.Log(lastdist);
             //transform.localScale = new Vector3(lastdist, lastdist, lastdist);
             SetParticles();
             yield return new WaitForEndOfFrame();

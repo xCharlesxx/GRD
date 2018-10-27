@@ -48,9 +48,9 @@ public class GaiaDownloader : MonoBehaviour
     private IEnumerator LoadExistingMagic()
     {
         int i = 0;
-           var startingindex = 0;
+        var startingindex = 0;
         extract.loadExistingMagic = true;
-        for ( i = 0; i < magicCount; i++)
+        for (i = 0; i < magicCount; i++)
         {
             if (File.Exists("Assets/Misc/MagicFiles/magic" + i + ".csv"))
             {
@@ -66,7 +66,8 @@ public class GaiaDownloader : MonoBehaviour
 
         finish = DateTime.UtcNow;
         TimeSpan ts = new TimeSpan(finish.Ticks - start.Ticks);
-        Debug.Log(i-1 + " magic files loaded in " + ts.TotalSeconds + " seconds\n" + (i-1)*34 + " datasets included");
+        Debug.Log(i - 1 + " magic files loaded in " + ts.TotalSeconds + " seconds\n" + (i - 1) * 34 +
+                  " datasets included");
         yield return null;
     }
 
@@ -154,7 +155,7 @@ public class GaiaDownloader : MonoBehaviour
             StartCoroutine(DeleteFiles());
         }
 
-        extract.SetParticles();
+        //extract.SetParticles();
         yield return null;
     }
 
