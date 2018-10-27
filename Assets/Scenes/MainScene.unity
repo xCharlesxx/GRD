@@ -250,7 +250,7 @@ SphereCollider:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 195189272}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5
@@ -271,7 +271,7 @@ MonoBehaviour:
   m_parentHeldObject: 0
   m_gripTransform: {fileID: 195189273}
   m_grabVolumes:
-  - {fileID: 0}
+  - {fileID: 1861749205}
   m_controller: 2
   m_parentTransform: {fileID: 195189273}
 --- !u!54 &195189276
@@ -486,6 +486,7 @@ GameObject:
   - component: {fileID: 1620600356}
   - component: {fileID: 1620600352}
   - component: {fileID: 1620600357}
+  - component: {fileID: 1620600358}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -5167,6 +5168,22 @@ MonoBehaviour:
   deleteFiles: 0
   extract: {fileID: 1620600351}
   loadExistingMagic: 1
+--- !u!114 &1620600358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1620600350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02d61468f8b77ae4b92c344bc9a600fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_allowOffhandGrab: 1
+  m_snapPosition: 0
+  m_snapOrientation: 0
+  m_snapOffset: {fileID: 0}
+  m_grabPoints: []
 --- !u!1 &1653631301
 GameObject:
   m_ObjectHideFlags: 0
@@ -5321,7 +5338,7 @@ SphereCollider:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1861749203}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5
@@ -5342,7 +5359,7 @@ MonoBehaviour:
   m_parentHeldObject: 0
   m_gripTransform: {fileID: 1861749204}
   m_grabVolumes:
-  - {fileID: 0}
+  - {fileID: 1861749205}
   m_controller: 1
   m_parentTransform: {fileID: 1861749204}
 --- !u!54 &1861749207
