@@ -4,10 +4,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 public class ExtractDataFromFile : MonoBehaviour
 {
+    protected ComputeBuffer compute_buffer;
+    public Material material;
     public struct StarStats
     {
         public string ID;
@@ -35,14 +40,20 @@ public class ExtractDataFromFile : MonoBehaviour
     public bool loadExistingMagic;
     public bool colour = false;
     public float distanceMultiplier = 0;
-
+    Vector3 positionFuckThreading;
     float lastdist;
-
+    private Action<int> UpdateParticleAction;
+    private Action<int> CreateParticleAction;
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
+    public ConcurrentBag<StarStats> starsBag = new ConcurrentBag<StarStats>();
+
     public List<StarStats> stars = new List<StarStats>();
     string[] headings;
     ParticleSystem starSpawner;
     int counter = 0;
+    string[] lines;
+    //public SetParticlesJobSystem job { get; private set; }
+    public ParticleSystem.Particle[] pParticlesGl { get; private set; }
 
 
     // Use this for initialization
@@ -53,6 +64,7 @@ public class ExtractDataFromFile : MonoBehaviour
     }
 
 
+
     public IEnumerator LoadFromFile(string filePath)
     {
         //Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= 15f ||
@@ -60,44 +72,16 @@ public class ExtractDataFromFile : MonoBehaviour
         //Get headings
         headings = (fileData.Substring(0, fileData.IndexOf('\n') - 1)).Split(',');
         //Ignore first line of headings in main data set and then split by line
-        string[] lines = (fileData.Substring(fileData.IndexOf('\n') + 1)).Split("\n"[0]);
-        var count = stars.Count;
-        for (int i = 0; i <= lines.GetUpperBound(0) - 1; i++)
-        {
-            string[] values = lines[i].Split(',');
+        lines = (fileData.Substring(fileData.IndexOf('\n') + 1)).Split("\n"[0]);
+        //var count = stars.Count;
 
-            //Ignore data with missing values
-            if (values[GetDataLocation(headings, "parallax")] == "" ||
-                values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
-                values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
-                values[GetDataLocation(headings, "lum_val")] == "" ||
-                values[GetDataLocation(headings, "ra")] == "" ||
-                values[GetDataLocation(headings, "dec")] == "" ||
-                values[GetDataLocation(headings, "pmra")] == "" ||
-                values[GetDataLocation(headings, "pmdec")] == "" ||
-                values[GetDataLocation(headings, "radial_velocity")] == "" ||
-                values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
-                continue;
+        CreateParticleAction = CreateParticle;
+        if (lines.GetUpperBound(0) != 0)
+            Parallel.For(0, lines.GetUpperBound(0) - 1, CreateParticleAction);
+        else
+            Debug.Log(filePath);
 
-            if (loadExistingMagic && Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= 15f)
-            {
-                continue;
-;
-            }
-
-            StarStats temp = new StarStats();
-            temp.ID = values[1];
-            temp.parallax = double.Parse(values[GetDataLocation(headings, "parallax")]); //9
-            temp.ascension = double.Parse(values[GetDataLocation(headings, "ra")]); //5
-            temp.declination = double.Parse(values[GetDataLocation(headings, "dec")]); //7
-            temp.luminosity = double.Parse(values[GetDataLocation(headings, "lum_val")]);
-            temp.colour = double.Parse(values[GetDataLocation(headings, "astrometric_pseudo_colour")]); //37
-            temp.pmra = double.Parse(values[GetDataLocation(headings, "pmra")]); //12
-            temp.pmdec = double.Parse(values[GetDataLocation(headings, "pmdec")]); //14
-            temp.radialVelocity = double.Parse(values[GetDataLocation(headings, "radial_velocity")]);
-
-            stars.Add(temp);
-        }
+        
 
         if (!loadExistingMagic)
         {
@@ -108,7 +92,7 @@ public class ExtractDataFromFile : MonoBehaviour
             }
         }
 
-        Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count - count));
+        //Debug.Log("Reading from: " + filePath + " complete, stars: " + (stars.Count - count));
         yield return null;
     }
 
@@ -158,19 +142,30 @@ public class ExtractDataFromFile : MonoBehaviour
         return 0;
     }
 
-
+    struct Point
+    {
+        public Vector3 position;
+    }
     public void SetParticles()
     {
+        compute_buffer = new ComputeBuffer(stars.Count, sizeof(float) * 3, ComputeBufferType.Default);
         var pParticles = new ParticleSystem.Particle[stars.Count];
+        Transform tcopy = transform;
+        Point[] cloud = new Point[stars.Count];
         for (int i = 0; i < stars.Count; i++)
         {
             float distance = (float) (1 / stars[i].parallax);
             //Zero rotation 
-            transform.rotation = Quaternion.identity;
+            tcopy.rotation = Quaternion.identity;
             //Turn to direction of star
-            transform.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
+            tcopy.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
             //Spawn star
-            pParticles[i].position = transform.position + transform.forward * (distance * lastdist);
+            pParticles[i].rotation3D = tcopy.forward;
+            pParticles[i].position = tcopy.position + tcopy.forward * (distance * lastdist);
+
+            cloud[i].position.x = pParticles[i].position.x;
+            cloud[i].position.y = pParticles[i].position.y;
+            cloud[i].position.z = pParticles[i].position.z;
             pParticles[i].startSize3D = new Vector3((float) stars[i].luminosity / 1000,
                 (float) stars[i].luminosity / 1000, (float) stars[i].luminosity / 1000);
             if (!colour)
@@ -179,12 +174,73 @@ public class ExtractDataFromFile : MonoBehaviour
                 pParticles[i].startColor = PseudoToRGB(stars[i].colour);
         }
 
+    
+        //compute_buffer.SetData(cloud);
+
         starSpawner = gameObject.GetComponent<ParticleSystem>();
         starSpawner.SetParticles(pParticles, stars.Count);
+
+        starSpawner.Stop();
         //starSpawner.Emit(stars.Count);
-        //starSpawner.Pause(); 
+        //
     }
 
+
+
+    public void UpdateParticles()
+    {
+        pParticlesGl = new ParticleSystem.Particle[stars.Count];
+        gameObject.GetComponent<ParticleSystem>().GetParticles(pParticlesGl);
+        UpdateParticleAction = UpdateParticle;
+        positionFuckThreading = transform.position;
+        Parallel.For(0, stars.Count, UpdateParticleAction);
+      
+        starSpawner = gameObject.GetComponent<ParticleSystem>();
+        starSpawner.SetParticles(pParticlesGl, stars.Count);
+        starSpawner.Stop();
+    }
+
+    private void CreateParticle(int index)
+    {
+        string[] values = lines[index].Split(',');
+
+        //Ignore data with missing values
+        if (values[GetDataLocation(headings, "parallax")] == "" ||
+            values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
+            values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
+            values[GetDataLocation(headings, "lum_val")] == "" ||
+            values[GetDataLocation(headings, "ra")] == "" ||
+            values[GetDataLocation(headings, "dec")] == "" ||
+            values[GetDataLocation(headings, "pmra")] == "" ||
+            values[GetDataLocation(headings, "pmdec")] == "" ||
+            values[GetDataLocation(headings, "radial_velocity")] == "" ||
+            values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
+            return;
+
+        //if (loadExistingMagic && Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= 3.5f)
+        //{
+        //    return;
+        //}
+
+        StarStats temp = new StarStats();
+        temp.ID = values[1];
+        temp.parallax = double.Parse(values[GetDataLocation(headings, "parallax")]); //9
+        temp.ascension = double.Parse(values[GetDataLocation(headings, "ra")]); //5
+        temp.declination = double.Parse(values[GetDataLocation(headings, "dec")]); //7
+        temp.luminosity = double.Parse(values[GetDataLocation(headings, "lum_val")]);
+        temp.colour = double.Parse(values[GetDataLocation(headings, "astrometric_pseudo_colour")]); //37
+        temp.pmra = double.Parse(values[GetDataLocation(headings, "pmra")]); //12
+        temp.pmdec = double.Parse(values[GetDataLocation(headings, "pmdec")]); //14
+        temp.radialVelocity = double.Parse(values[GetDataLocation(headings, "radial_velocity")]);
+
+        starsBag.Add(temp);
+    }
+
+    private void UpdateParticle(int index)
+    {
+        float distance = (float)(1 / stars[index].parallax);
+        pParticlesGl[index].position = positionFuckThreading + pParticlesGl[index].rotation3D * (distance * lastdist);
+    }
 
     Color PseudoToRGB(double wavenumber)
     {
@@ -317,11 +373,22 @@ public class ExtractDataFromFile : MonoBehaviour
         {
             //timer += Time.deltaTime / 10.0f;
             lastdist += (distanceMultiplier - lastdist) * 0.1f;
-            Debug.Log(lastdist);
             //transform.localScale = new Vector3(lastdist, lastdist, lastdist);
-            SetParticles();
+            UpdateParticles();
             yield return new WaitForEndOfFrame();
         }
+    }
+
+    void OnPostRender()
+    {
+        material.SetPass(0);
+        material.SetBuffer("cloud", compute_buffer);
+        Graphics.DrawProcedural(MeshTopology.Points, stars.Count, 1);
+    }
+
+    void OnDestroy()
+    {
+        compute_buffer.Release();
     }
 }
 

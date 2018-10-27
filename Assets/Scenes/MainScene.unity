@@ -301,6 +301,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 852704b78b91d294bb4fbf6601c6c5f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  material: {fileID: 0}
   starsLimit: 25000
   filesConverted: 0
   loadExistingMagic: 1

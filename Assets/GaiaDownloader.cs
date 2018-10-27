@@ -62,8 +62,8 @@ public class GaiaDownloader : MonoBehaviour
             }
         }
 
+        extract.stars = extract.starsBag.ToList<ExtractDataFromFile.StarStats>();
         extract.SetParticles();
-
         finish = DateTime.UtcNow;
         TimeSpan ts = new TimeSpan(finish.Ticks - start.Ticks);
         Debug.Log(i - 1 + " magic files loaded in " + ts.TotalSeconds + " seconds\n" + (i - 1) * 34 +
