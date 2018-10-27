@@ -4966,5 +4966,5 @@ MonoBehaviour:
   filesCount: 500
   deleteFiles: 1
   extract: {fileID: 1620600351}
-  magicCount: 300
+  magicCount: 450
   loadExistingMagic: 1

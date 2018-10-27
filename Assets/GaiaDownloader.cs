@@ -15,7 +15,7 @@ public class GaiaDownloader : MonoBehaviour
     [SerializeField] private bool deleteFiles;
     [SerializeField] private ExtractDataFromFile extract;
 
-    [Range(1, 300)] [SerializeField] private int magicCount;
+    [Range(1, 450)] [SerializeField] private int magicCount;
     [SerializeField] private bool loadExistingMagic;
     private List<string> linkList;
     private List<string> filesToDelete;
