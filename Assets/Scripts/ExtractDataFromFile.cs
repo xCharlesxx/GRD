@@ -8,11 +8,13 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Linq;
 
 public class ExtractDataFromFile : MonoBehaviour
 {
     protected ComputeBuffer compute_buffer;
     public Material material;
+
     public struct StarStats
     {
         public string ID;
@@ -33,17 +35,22 @@ public class ExtractDataFromFile : MonoBehaviour
         public double radialVelocity;
     }
 
+    public bool GPUParticles = false;
     public int starsLimit;
     private int filesLoaded = 0;
     public int filesConverted = 0;
-
+    public bool DistanceTrim;
+    public float DistanceTrimValue = 7.5f;
+    private Point[] cloud;
     public bool loadExistingMagic;
     public bool colour = false;
     public float distanceMultiplier = 0;
     Vector3 positionFuckThreading;
     float lastdist;
     private Action<int> UpdateParticleAction;
+
     private Action<int> CreateParticleAction;
+
     //string filePath = "Assets/Misc/GaiaSource-CSV.csv";
     public ConcurrentBag<StarStats> starsBag = new ConcurrentBag<StarStats>();
 
@@ -51,7 +58,9 @@ public class ExtractDataFromFile : MonoBehaviour
     string[] headings;
     ParticleSystem starSpawner;
     int counter = 0;
+
     string[] lines;
+
     //public SetParticlesJobSystem job { get; private set; }
     public ParticleSystem.Particle[] pParticlesGl { get; private set; }
 
@@ -62,7 +71,6 @@ public class ExtractDataFromFile : MonoBehaviour
         lastdist = distanceMultiplier;
         //LoadFromFile("Assets/Misc/GaiaSource-CSV.csv");
     }
-
 
 
     public IEnumerator LoadFromFile(string filePath)
@@ -81,7 +89,6 @@ public class ExtractDataFromFile : MonoBehaviour
         else
             Debug.Log(filePath);
 
-        
 
         if (!loadExistingMagic)
         {
@@ -99,6 +106,7 @@ public class ExtractDataFromFile : MonoBehaviour
 
     public IEnumerator ConvertFile()
     {
+        stars = starsBag.ToList<ExtractDataFromFile.StarStats>();
         var path = "Assets/Misc/MagicFiles/magic" + filesConverted + ".csv";
         Debug.Log(path);
         StreamWriter writer = new StreamWriter(path);
@@ -108,7 +116,7 @@ public class ExtractDataFromFile : MonoBehaviour
         writer.WriteLine();
         for (int i = 0; i < stars.Count; i++)
         {
-            StarStats item = (StarStats) stars[i];
+            StarStats item = (StarStats)stars[i];
             var line2 = i + ",";
             line2 += item.ID + ",";
             line2 += item.ascension + ",";
@@ -127,6 +135,8 @@ public class ExtractDataFromFile : MonoBehaviour
         writer.Close();
         filesConverted++;
         stars = new List<StarStats>();
+        starsBag = new ConcurrentBag<StarStats>();
+        GC.Collect();
         yield return null;
     }
 
@@ -142,23 +152,27 @@ public class ExtractDataFromFile : MonoBehaviour
         return 0;
     }
 
+
     struct Point
     {
         public Vector3 position;
+        public Color colour;
     }
+
+
     public void SetParticles()
     {
-        compute_buffer = new ComputeBuffer(stars.Count, sizeof(float) * 3, ComputeBufferType.Default);
+        compute_buffer = new ComputeBuffer(stars.Count, sizeof(float) * 7, ComputeBufferType.Default);
         var pParticles = new ParticleSystem.Particle[stars.Count];
         Transform tcopy = transform;
-        Point[] cloud = new Point[stars.Count];
+        cloud = new Point[stars.Count];
         for (int i = 0; i < stars.Count; i++)
         {
-            float distance = (float) (1 / stars[i].parallax);
+            float distance = (float)(1 / stars[i].parallax);
             //Zero rotation 
             tcopy.rotation = Quaternion.identity;
             //Turn to direction of star
-            tcopy.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
+            tcopy.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
             //Spawn star
             pParticles[i].rotation3D = tcopy.forward;
             pParticles[i].position = tcopy.position + tcopy.forward * (distance * lastdist);
@@ -166,25 +180,33 @@ public class ExtractDataFromFile : MonoBehaviour
             cloud[i].position.x = pParticles[i].position.x;
             cloud[i].position.y = pParticles[i].position.y;
             cloud[i].position.z = pParticles[i].position.z;
-            pParticles[i].startSize3D = new Vector3((float) stars[i].luminosity / 1000,
-                (float) stars[i].luminosity / 1000, (float) stars[i].luminosity / 1000);
+            pParticles[i].startSize3D = new Vector3((float)stars[i].luminosity / 1000,
+                (float)stars[i].luminosity / 1000, (float)stars[i].luminosity / 1000);
             if (!colour)
+            {
+                cloud[i].colour = new Color(1, 1, 1, 1);
                 pParticles[i].startColor = new Color(1, 1, 1, 1);
+            }
+
             else
+            {
                 pParticles[i].startColor = PseudoToRGB(stars[i].colour);
+                cloud[i].colour = PseudoToRGB(stars[i].colour);
+            }
         }
 
-    
-        //compute_buffer.SetData(cloud);
+        if (GPUParticles)
+            compute_buffer.SetData(cloud);
+        else
+        {
+            starSpawner = gameObject.GetComponent<ParticleSystem>();
+            starSpawner.SetParticles(pParticles, stars.Count);
+        }
 
-        starSpawner = gameObject.GetComponent<ParticleSystem>();
-        starSpawner.SetParticles(pParticles, stars.Count);
-
-        starSpawner.Stop();
+        //starSpawner.Stop();
         //starSpawner.Emit(stars.Count);
         //
     }
-
 
 
     public void UpdateParticles()
@@ -194,11 +216,12 @@ public class ExtractDataFromFile : MonoBehaviour
         UpdateParticleAction = UpdateParticle;
         positionFuckThreading = transform.position;
         Parallel.For(0, stars.Count, UpdateParticleAction);
-      
+
         starSpawner = gameObject.GetComponent<ParticleSystem>();
         starSpawner.SetParticles(pParticlesGl, stars.Count);
         starSpawner.Stop();
     }
+
 
     private void CreateParticle(int index)
     {
@@ -217,10 +240,14 @@ public class ExtractDataFromFile : MonoBehaviour
             values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
             return;
 
-        //if (loadExistingMagic && Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= 3.5f)
-        //{
-        //    return;
-        //}
+        if (loadExistingMagic && DistanceTrim)
+        {
+            if (loadExistingMagic &&
+                Convert.ToDouble(values[GetDataLocation(headings, "parallax")]) <= DistanceTrimValue)
+            {
+                return;
+            }
+        }
 
         StarStats temp = new StarStats();
         temp.ID = values[1];
@@ -236,18 +263,21 @@ public class ExtractDataFromFile : MonoBehaviour
         starsBag.Add(temp);
     }
 
+
     private void UpdateParticle(int index)
     {
         float distance = (float)(1 / stars[index].parallax);
         pParticlesGl[index].position = positionFuckThreading + pParticlesGl[index].rotation3D * (distance * lastdist);
+        cloud[index].position = positionFuckThreading + pParticlesGl[index].rotation3D * (distance * lastdist);
     }
+
 
     Color PseudoToRGB(double wavenumber)
     {
         //Keeping precision with double over float
         var nanometers = wavenumber / 1000.0f;
         var wavelengthdouble = 1.0f / nanometers;
-        float wavelength = (float) wavelengthdouble;
+        float wavelength = (float)wavelengthdouble;
         float Gamma = 0.80f;
         int IntensityMax = 255;
         float factor, red, green, blue;
@@ -309,13 +339,13 @@ public class ExtractDataFromFile : MonoBehaviour
             factor = 0.0f;
 
         if (red != 0)
-            red = (float) Math.Round(IntensityMax * Math.Pow(red * factor, Gamma));
+            red = (float)Math.Round(IntensityMax * Math.Pow(red * factor, Gamma));
 
         if (green != 0)
-            green = (float) Math.Round(IntensityMax * Math.Pow(green * factor, Gamma));
+            green = (float)Math.Round(IntensityMax * Math.Pow(green * factor, Gamma));
 
         if (blue != 0)
-            blue = (float) Math.Round(IntensityMax * Math.Pow(blue * factor, Gamma));
+            blue = (float)Math.Round(IntensityMax * Math.Pow(blue * factor, Gamma));
 
         return new Color(red, green, blue);
     }
@@ -325,12 +355,12 @@ public class ExtractDataFromFile : MonoBehaviour
     {
         for (int i = 0; i < stars.Count; i++)
         {
-            float distance = (float) (1 / stars[i].parallax);
+            float distance = (float)(1 / stars[i].parallax);
             Debug.DrawLine(new Vector3(0, 0, 0), Vector3.forward * distance);
             //Zero rotation 
             transform.rotation = Quaternion.identity;
             //Turn to direction of star
-            transform.Rotate((float) stars[i].declination, (float) stars[i].ascension, 0);
+            transform.Rotate((float)stars[i].declination, (float)stars[i].ascension, 0);
             //Spawn star
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = transform.position + transform.forward * (distance * 10);
@@ -379,16 +409,24 @@ public class ExtractDataFromFile : MonoBehaviour
         }
     }
 
+
     void OnPostRender()
     {
-        material.SetPass(0);
-        material.SetBuffer("cloud", compute_buffer);
-        Graphics.DrawProcedural(MeshTopology.Points, stars.Count, 1);
+        if (compute_buffer != null)
+        {
+            material.SetPass(0);
+            material.SetBuffer("cloud", compute_buffer);
+            Graphics.DrawProcedural(MeshTopology.Points, stars.Count, 1);
+        }
     }
+
 
     void OnDestroy()
     {
-        compute_buffer.Release();
+        if (compute_buffer != null)
+        {
+            compute_buffer.Release();
+        }
     }
 }
 
