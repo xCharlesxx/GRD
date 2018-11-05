@@ -375,12 +375,13 @@ public class ExtractDataFromFile : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //if (Input.GetKeyUp(KeyCode.Space))
-        //if (lastdist != distanceMultiplier)
-        //{
-        //    SetParticles();
-        //    lastdist = distanceMultiplier; 
-        //}
+       // if (Input.GetKeyUp(KeyCode.Space))
+            if (lastdist != distanceMultiplier)
+            {
+                //StartCoroutine(Explode());
+                UpdateParticles(); 
+                lastdist = distanceMultiplier;
+            }
         if (Input.GetKeyUp(KeyCode.Return))
         {
             distanceMultiplier = 100;
