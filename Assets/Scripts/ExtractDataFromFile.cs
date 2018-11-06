@@ -388,6 +388,12 @@ public class ExtractDataFromFile : MonoBehaviour
             StartCoroutine(Explode());
         }
 
+        if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger))
+            distanceMultiplier++; 
+
+        if (OVRInput.Get(OVRInput.Button.SecondaryHandTrigger))
+            distanceMultiplier--; 
+
         if (Input.GetKeyUp(KeyCode.R))
         {
             lastdist = 0;
