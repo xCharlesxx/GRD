@@ -64,11 +64,14 @@ public class ExtractDataFromFile : MonoBehaviour
     //public SetParticlesJobSystem job { get; private set; }
     public ParticleSystem.Particle[] pParticlesGl { get; private set; }
 
-
+    private GameObject grabbableObject;
+    private Vector3 LastGrabbablePos; 
     // Use this for initialization
     void Start()
     {
         lastdist = distanceMultiplier;
+        grabbableObject = GameObject.Find("GrabbableObject");
+        LastGrabbablePos = grabbableObject.transform.position; 
         //LoadFromFile("Assets/Misc/GaiaSource-CSV.csv");
     }
 
@@ -227,18 +230,18 @@ public class ExtractDataFromFile : MonoBehaviour
     {
         string[] values = lines[index].Split(',');
 
-        //Ignore data with missing values
-        if (values[GetDataLocation(headings, "parallax")] == "" ||
-            values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
-            values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
-            values[GetDataLocation(headings, "lum_val")] == "" ||
-            values[GetDataLocation(headings, "ra")] == "" ||
-            values[GetDataLocation(headings, "dec")] == "" ||
-            values[GetDataLocation(headings, "pmra")] == "" ||
-            values[GetDataLocation(headings, "pmdec")] == "" ||
-            values[GetDataLocation(headings, "radial_velocity")] == "" ||
-            values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
-            return;
+        ////Ignore data with missing values
+        //if (values[GetDataLocation(headings, "parallax")] == "" ||
+        //    values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "" ||
+        //    values[GetDataLocation(headings, "astrometric_pseudo_colour")] == "\r" ||
+        //    values[GetDataLocation(headings, "lum_val")] == "" ||
+        //    values[GetDataLocation(headings, "ra")] == "" ||
+        //    values[GetDataLocation(headings, "dec")] == "" ||
+        //    values[GetDataLocation(headings, "pmra")] == "" ||
+        //    values[GetDataLocation(headings, "pmdec")] == "" ||
+        //    values[GetDataLocation(headings, "radial_velocity")] == "" ||
+        //    values[GetDataLocation(headings, "duplicated_source")] == "TRUE")
+        //    return;
 
         if (loadExistingMagic && DistanceTrim)
         {
@@ -375,30 +378,44 @@ public class ExtractDataFromFile : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       // if (Input.GetKeyUp(KeyCode.Space))
-            if (lastdist != distanceMultiplier)
-            {
-                //StartCoroutine(Explode());
-                UpdateParticles(); 
-                lastdist = distanceMultiplier;
-            }
+
+        // if (Input.GetKeyUp(KeyCode.Space))
+        if (lastdist != distanceMultiplier)
+        {
+            //StartCoroutine(Explode());
+            UpdateParticles();
+            lastdist = distanceMultiplier;
+        }
+
         if (Input.GetKeyUp(KeyCode.Return))
         {
             distanceMultiplier = 100;
             StartCoroutine(Explode());
         }
 
-        if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger))
+        if (OVRInput.Get(OVRInput.Button.One))
             distanceMultiplier++; 
 
-        if (OVRInput.Get(OVRInput.Button.SecondaryHandTrigger))
-            distanceMultiplier--; 
+        if (OVRInput.Get(OVRInput.Button.Two))
+            if (distanceMultiplier > -1)
+                 distanceMultiplier--;
+
+        if (OVRInput.Get(OVRInput.Button.Three))
+            grabbableObject.transform.position = new Vector3(0.1f, 1.2f, 1f);
+
+        if (grabbableObject.transform.position != LastGrabbablePos)
+        {
+            LastGrabbablePos = grabbableObject.transform.position;
+            UpdateParticles(); 
+        }
+            
 
         if (Input.GetKeyUp(KeyCode.R))
         {
             lastdist = 0;
             SetParticles();
         }
+        
     }
 
 

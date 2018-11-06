@@ -33,8 +33,8 @@ public class point_cloud : MonoBehaviour
         Graphics.DrawProcedural(MeshTopology.Points, number, 1);
     }
  
-    void OnDestroy()
-    {
-        compute_buffer.Release();
-    }
+    //void OnDestroy()
+    //{
+    //    compute_buffer.Release();
+    //}
 }
